@@ -8,6 +8,16 @@ from agents.reviewer import review_report
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class ResearchRequest(BaseModel):
     topic: str
 
@@ -32,6 +42,9 @@ def run_pipeline(request: ResearchRequest):
     report = write_report(request.topic, summary)
     review = review_report(report)
 
+    return {"review": review}
+
+
     return {
         "topic": request.topic,
         "plan": plan,
@@ -40,3 +53,5 @@ def run_pipeline(request: ResearchRequest):
         "report": report,
         "review": review
     }
+
+    

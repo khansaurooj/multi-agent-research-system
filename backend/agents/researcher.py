@@ -11,9 +11,11 @@ def research_topic(topic: str) -> str:
         max_tokens=1000,
         messages=[{
             "role": "user",
-            "content": f"""You are a research agent. Provide detailed, factual information on the following topic, organized under these headings: Definition, History, How it Works, Applications, Advantages, Disadvantages.
+            "content": f"""You are a research agent. First, directly answer the user's question in 2-3 sentences with specific, concrete information (real names, numbers, or recommendations if relevant — no vague generalities).
 
-Topic: {topic}"""
+Then provide supporting depth organized under: Key Details, Why It Matters, Considerations/Trade-offs, Additional Context.
+
+Question/Topic: {topic}"""
         }]
     )
     return response.choices[0].message.content
