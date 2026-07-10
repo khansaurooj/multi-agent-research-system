@@ -1,23 +1,21 @@
-import os
-from dotenv import load_dotenv
-from groq import Groq
+from utils.groq_client import client
 
-load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-def review_report(report: str) -> str:
+def review_report(text: str) -> str:
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         max_tokens=600,
         messages=[{
             "role": "user",
-            "content": f"""You are a senior editor reviewing a research report. Check for: grammar issues, missing sections, unclear explanations, and repeated content. 
+            "content": f"""You are an editor. Review the text below and give direct, useful feedback.
 
-If the report is good, respond with "APPROVED" followed by a one-sentence reason.
-If it needs fixes, respond with "NEEDS REVISION" followed by a bullet list of specific issues.
+If it's a short phrase, sentence, or question: check spelling, grammar, and word choice only. Don't ask for missing sections like introduction or conclusion — that doesn't apply.
 
-Report:
-{report}"""
+If it's a full document or report: check grammar, structure, missing sections, clarity, and repetition.
+
+Text:
+{text}
+
+Respond with your specific feedback. If nothing is wrong, just say so plainly."""
         }]
     )
     return response.choices[0].message.content

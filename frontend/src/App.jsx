@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import ReactMarkdown from 'react-markdown'
 
 const BACKEND_URL = "https://super-engine-g4rxxpxrxx47cvq54-8000.app.github.dev"
 
@@ -57,8 +58,13 @@ function App() {
       })
       if (!response.ok) throw new Error("Server error")
       const data = await response.json()
-      setResult(data)
-      setActiveTab(mode === "pipeline" ? "report" : Object.keys(data)[0])
+        if (data.error) {
+        setError(data.error)
+          } else {
+              setResult(data)
+          }
+      const resultKeys = Object.keys(data).filter(k => k !== "topic")
+      setActiveTab(mode === "pipeline" ? "report" : resultKeys[0])
       setProgressStep(AGENTS.length)
     } catch (err) {
       setError("Something went wrong. Check your backend is running.")
@@ -68,10 +74,30 @@ function App() {
     }
   }
 
+  const copyToClipboard = () => {
+  const text = result[activeTab] || result[tabKeys[0]]
+  navigator.clipboard.writeText(text)
+  alert("Copied to clipboard!")
+}
+
+const downloadAsText = () => {
+  const text = result[activeTab] || result[tabKeys[0]]
+  const blob = new Blob([text], { type: "text/plain" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `${activeTab}-${Date.now()}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
   const tabKeys = result ? Object.keys(result).filter(k => k !== "topic") : []
 
   return (
-    <div className="page">
+  <div className="page">
+    <div className="bg-orb orb-1"></div>
+    <div className="bg-orb orb-2"></div>
+    <div className="bg-orb orb-3"></div>
       <header className="header">
         <div className="logo">⚛️ Multi-Agent Research</div>
         <div className="header-tag">6 agents · 4 modes</div>
@@ -145,8 +171,12 @@ function App() {
               </div>
             )}
             <div className="tab-content">
-              <p>{result[activeTab] || result[tabKeys[0]]}</p>
-            </div>
+  <div className="tab-actions">
+    <button className="action-btn" onClick={copyToClipboard}>📋 Copy</button>
+    <button className="action-btn" onClick={downloadAsText}>⬇️ Download</button>
+  </div>
+  <ReactMarkdown>{result[activeTab] || result[tabKeys[0]]}</ReactMarkdown>
+</div>
           </div>
         )}
       </main>

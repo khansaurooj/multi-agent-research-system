@@ -1,9 +1,4 @@
-import os
-from dotenv import load_dotenv
-from groq import Groq
-
-load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+from utils.groq_client import client
 
 def summarize_research(research: str) -> str:
     response = client.chat.completions.create(
@@ -11,9 +6,9 @@ def summarize_research(research: str) -> str:
         max_tokens=400,
         messages=[{
             "role": "user",
-            "content": f"""Summarize the following research into a concise summary (150-200 words), keeping the most important facts only.
+            "content": f"""Summarize the text below. Your summary must be significantly shorter than the original — capture only the core point and 2-3 key supporting details. Do not repeat sentences verbatim from the original; rewrite in your own words.
 
-Research:
+Text:
 {research}"""
         }]
     )
