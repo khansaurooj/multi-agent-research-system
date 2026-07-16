@@ -5,6 +5,7 @@ from agents.researcher import research_topic
 from agents.summarizer import summarize_research
 from agents.writer import write_report
 from agents.reviewer import review_report
+from agents.searcher import search_web
 
 app = FastAPI()
 
@@ -53,6 +54,16 @@ def review_text(request: TextRequest):
 def get_research(request: ResearchRequest):
     research = research_topic(request.topic)
     return {"topic": request.topic, "research": research}
+
+
+
+@app.post("/research")
+def get_research(request: ResearchRequest):
+    try:
+        research = research_topic(request.topic)
+        return {"topic": request.topic, "research": research}
+    except Exception as e:
+        return {"error": f"Research failed: {str(e)}"}
 
 @app.post("/pipeline")
 def run_pipeline(request: ResearchRequest):
