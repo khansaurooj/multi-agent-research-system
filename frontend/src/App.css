@@ -485,3 +485,61 @@ h1 {
   color: #a78bfa;
   transform: translateY(-1px);
 }
+
+.sources-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #26264080;
+}
+
+.sources-section h3 {
+  font-size: 1rem;
+  color: #a78bfa;
+  margin-bottom: 14px;
+}
+
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.source-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #16162a;
+  border: 1px solid #2a2a45;
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: #d0d0da;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.source-card:hover {
+  border-color: #a78bfa;
+  background: #1a1a3040;
+  transform: translateY(-2px);
+}
+
+.source-number {
+  background: #7c3aed;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.source-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

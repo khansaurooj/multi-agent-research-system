@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import './App.css'
 import ReactMarkdown from 'react-markdown'
+import './App.css'
 
-const BACKEND_URL = import.meta.env.VITE_API_URL
+const BACKEND_URL = "https://super-engine-g4rxxpxrxx47cvq54-8000.app.github.dev"
 
 const AGENTS = [
   { key: "plan", label: "Planner", icon: "🧭" },
@@ -35,6 +35,25 @@ function App() {
     review: { url: "/review-text", body: (v) => ({ text: v }) },
   }
 
+  const tabKeys = result ? Object.keys(result).filter(k => k !== "topic" && k !== "sources") : []
+
+  const copyToClipboard = () => {
+    const text = result[activeTab] || result[tabKeys[0]]
+    navigator.clipboard.writeText(text)
+    alert("Copied to clipboard!")
+  }
+
+  const downloadAsText = () => {
+    const text = result[activeTab] || result[tabKeys[0]]
+    const blob = new Blob([text], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `${activeTab}-${Date.now()}.txt`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const runAction = async () => {
     if (!input.trim()) return
     setLoading(true)
@@ -58,14 +77,14 @@ function App() {
       })
       if (!response.ok) throw new Error("Server error")
       const data = await response.json()
-        if (data.error) {
+      if (data.error) {
         setError(data.error)
-          } else {
-              setResult(data)
-          }
-      const resultKeys = Object.keys(data).filter(k => k !== "topic")
-      setActiveTab(mode === "pipeline" ? "report" : resultKeys[0])
-      setProgressStep(AGENTS.length)
+      } else {
+        setResult(data)
+        const keys = Object.keys(data).filter(k => k !== "topic" && k !== "sources")
+        setActiveTab(mode === "pipeline" ? "report" : keys[0])
+        setProgressStep(AGENTS.length)
+      }
     } catch (err) {
       setError("Something went wrong. Check your backend is running.")
     } finally {
@@ -74,30 +93,12 @@ function App() {
     }
   }
 
-  const copyToClipboard = () => {
-  const text = result[activeTab] || result[tabKeys[0]]
-  navigator.clipboard.writeText(text)
-  alert("Copied to clipboard!")
-}
-
-const downloadAsText = () => {
-  const text = result[activeTab] || result[tabKeys[0]]
-  const blob = new Blob([text], { type: "text/plain" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `${activeTab}-${Date.now()}.txt`
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-  const tabKeys = result ? Object.keys(result).filter(k => k !== "topic") : []
-
   return (
-  <div className="page">
-    <div className="bg-orb orb-1"></div>
-    <div className="bg-orb orb-2"></div>
-    <div className="bg-orb orb-3"></div>
+    <div className="page">
+      <div className="bg-orb orb-1"></div>
+      <div className="bg-orb orb-2"></div>
+      <div className="bg-orb orb-3"></div>
+
       <header className="header">
         <div className="logo">⚛️ Multi-Agent Research</div>
         <div className="header-tag">6 agents · 4 modes</div>
@@ -144,7 +145,10 @@ const downloadAsText = () => {
           {mode === "pipeline" && (loading || result) && (
             <div className="pipeline-track">
               {AGENTS.map((agent, i) => (
-                <div key={agent.key} className={`pipeline-step ${i < progressStep ? "done" : ""} ${i === progressStep && loading ? "active" : ""}`}>
+                <div
+                  key={agent.key}
+                  className={`pipeline-step ${i < progressStep ? "done" : ""} ${i === progressStep && loading ? "active" : ""}`}
+                >
                   <div className="step-icon">{agent.icon}</div>
                   <span>{agent.label}</span>
                 </div>
@@ -171,12 +175,32 @@ const downloadAsText = () => {
               </div>
             )}
             <div className="tab-content">
-  <div className="tab-actions">
-    <button className="action-btn" onClick={copyToClipboard}>📋 Copy</button>
-    <button className="action-btn" onClick={downloadAsText}>⬇️ Download</button>
-  </div>
-  <ReactMarkdown>{result[activeTab] || result[tabKeys[0]]}</ReactMarkdown>
-</div>
+              <div className="tab-actions">
+                <button className="action-btn" onClick={copyToClipboard}>📋 Copy</button>
+                <button className="action-btn" onClick={downloadAsText}>⬇️ Download</button>
+              </div>
+              <ReactMarkdown>{result[activeTab] || result[tabKeys[0]]}</ReactMarkdown>
+
+              {result.sources && result.sources.length > 0 && (
+                <div className="sources-section">
+                  <h3>🔗 Sources</h3>
+                  <div className="sources-grid">
+                    {result.sources.map((source, i) => (
+                      
+                        key={i}
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="source-card"
+                      >
+                        <span className="source-number">{i + 1}</span>
+                        <span className="source-title">{source.title}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
