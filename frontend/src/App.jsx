@@ -2,7 +2,7 @@ import { useState } from 'react'
 import './App.css'
 import ReactMarkdown from 'react-markdown'
 
-const BACKEND_URL = "https://super-engine-g4rxxpxrxx47cvq54-8000.app.github.dev"
+const BACKEND_URL = import.meta.env.VITE_API_URL
 
 const AGENTS = [
   { key: "plan", label: "Planner", icon: "🧭" },
