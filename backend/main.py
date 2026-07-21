@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from agents.planner import plan_research
 from agents.researcher import research_topic
@@ -7,6 +8,7 @@ from agents.summarizer import summarize_research
 from agents.writer import write_report
 from agents.reviewer import review_report
 from agents.searcher import search_web
+from utils.pdf_generator import generate_pdf
 
 app = FastAPI()
 
@@ -23,6 +25,15 @@ class ResearchRequest(BaseModel):
 
 class TextRequest(BaseModel):
     text: str
+
+class PDFRequest(BaseModel):
+    topic: str
+    plan: str = ""
+    research: str = ""
+    summary: str = ""
+    report: str = ""
+    review: str = ""
+    sources: list = []
 
 @app.get("/")
 def root():
@@ -56,6 +67,22 @@ def review_text(request: TextRequest):
         return {"review": review}
     except Exception as e:
         return {"error": f"Review failed: {str(e)}"}
+
+@app.post("/export-pdf")
+def export_pdf(request: PDFRequest):
+    try:
+        content = {
+            "plan": request.plan,
+            "research": request.research,
+            "summary": request.summary,
+            "report": request.report,
+            "review": request.review,
+            "sources": request.sources
+        }
+        pdf_path = generate_pdf(request.topic, content)
+        return FileResponse(pdf_path, media_type="application/pdf", filename="research-report.pdf")
+    except Exception as e:
+        return {"error": f"PDF export failed: {str(e)}"}
 
 @app.post("/pipeline")
 def run_pipeline(request: ResearchRequest):

@@ -54,6 +54,33 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
+  const downloadPDF = async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/export-pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic: result.topic || input,
+        plan: result.plan || "",
+        research: result.research || "",
+        summary: result.summary || "",
+        report: result.report || "",
+        review: result.review || "",
+        sources: result.sources || []
+      })
+    })
+    if (!response.ok) throw new Error('Export failed')
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "research-report.pdf"
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    alert("PDF export failed")
+  }
+}
   const runAction = async () => {
     if (!input.trim()) return
     setLoading(true)
@@ -178,15 +205,18 @@ function App() {
               <div className="tab-actions">
                 <button className="action-btn" onClick={copyToClipboard}>📋 Copy</button>
                 <button className="action-btn" onClick={downloadAsText}>⬇️ Download</button>
+                {mode === "pipeline" && (
+  <button className="action-btn" onClick={downloadPDF}>📄 Download PDF</button>
+)}
               </div>
               <ReactMarkdown>{result[activeTab] || result[tabKeys[0]]}</ReactMarkdown>
-
+              
               {result.sources && result.sources.length > 0 && (
                 <div className="sources-section">
                   <h3>🔗 Sources</h3>
                   <div className="sources-grid">
                     {result.sources.map((source, i) => (
-                      
+                      <a
                         key={i}
                         href={source.url}
                         target="_blank"
