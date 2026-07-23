@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
+import Typewriter from './Typewriter'
+import ParticleBackground from './ParticleBackground'
 import './App.css'
 
 const BACKEND_URL = "https://super-engine-g4rxxpxrxx47cvq54-8000.app.github.dev"
 
 const AGENTS = [
-  { key: "plan", label: "Planner", icon: "🧭" },
-  { key: "research", label: "Researcher", icon: "🔍" },
-  { key: "summary", label: "Summarizer", icon: "✂️" },
-  { key: "report", label: "Writer", icon: "📝" },
-  { key: "review", label: "Reviewer", icon: "✅" },
+  { key: "plan", label: "Planner", icon: "🧭", status: "Planning the research approach..." },
+  { key: "research", label: "Researcher", icon: "🔍", status: "Searching the web for current info..." },
+  { key: "summary", label: "Summarizer", icon: "✂️", status: "Condensing findings..." },
+  { key: "report", label: "Writer", icon: "📝", status: "Writing the final report..." },
+  { key: "review", label: "Reviewer", icon: "✅", status: "Reviewing quality and clarity..." },
 ]
 
 const MODES = [
@@ -27,6 +29,8 @@ function App() {
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState("report")
   const [progressStep, setProgressStep] = useState(0)
+  const [history, setHistory] = useState([])
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const endpoints = {
     pipeline: { url: "/pipeline", body: (v) => ({ topic: v }) },
@@ -35,7 +39,34 @@ function App() {
     review: { url: "/review-text", body: (v) => ({ text: v }) },
   }
 
-  const tabKeys = result ? Object.keys(result).filter(k => k !== "topic" && k !== "sources") : []
+  const tabKeys = result ? Object.keys(result).filter(k => k !== "topic" && k !== "sources" && k !== "id") : []
+
+  useEffect(() => {
+    loadHistory()
+  }, [])
+
+  const loadHistory = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/history`)
+      const data = await res.json()
+      setHistory(data.reports || [])
+    } catch (err) {
+      console.error("Failed to load history")
+    }
+  }
+
+  const loadReport = async (id) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/history/${id}`)
+      const data = await res.json()
+      setResult(data)
+      setMode("pipeline")
+      setActiveTab("report")
+      setSidebarOpen(false)
+    } catch (err) {
+      alert("Failed to load report")
+    }
+  }
 
   const copyToClipboard = () => {
     const text = result[activeTab] || result[tabKeys[0]]
@@ -55,32 +86,38 @@ function App() {
   }
 
   const downloadPDF = async () => {
-  try {
-    const response = await fetch(`${BACKEND_URL}/export-pdf`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        topic: result.topic || input,
-        plan: result.plan || "",
-        research: result.research || "",
-        summary: result.summary || "",
-        report: result.report || "",
-        review: result.review || "",
-        sources: result.sources || []
+    try {
+      const response = await fetch(`${BACKEND_URL}/export-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: result.topic || input,
+          plan: result.plan || "",
+          research: result.research || "",
+          summary: result.summary || "",
+          report: result.report || "",
+          review: result.review || "",
+          sources: result.sources || []
+        })
       })
-    })
-    if (!response.ok) throw new Error('Export failed')
-    const blob = await response.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "research-report.pdf"
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    alert("PDF export failed")
+      const contentType = response.headers.get("content-type")
+      if (!response.ok || (contentType && contentType.includes("application/json"))) {
+        const errData = await response.json()
+        alert("PDF export failed: " + (errData.error || "Unknown error"))
+        return
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "research-report.pdf"
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert("PDF export failed: " + err.message)
+    }
   }
-}
+
   const runAction = async () => {
     if (!input.trim()) return
     setLoading(true)
@@ -108,7 +145,8 @@ function App() {
         setError(data.error)
       } else {
         setResult(data)
-        const keys = Object.keys(data).filter(k => k !== "topic" && k !== "sources")
+        if (mode === "pipeline") loadHistory()
+        const keys = Object.keys(data).filter(k => k !== "topic" && k !== "sources" && k !== "id")
         setActiveTab(mode === "pipeline" ? "report" : keys[0])
         setProgressStep(AGENTS.length)
       }
@@ -120,16 +158,38 @@ function App() {
     }
   }
 
+  const currentStatus = mode === "pipeline" && loading ? AGENTS[Math.min(progressStep, AGENTS.length - 1)].status : ""
+
   return (
     <div className="page">
-      <div className="bg-orb orb-1"></div>
-      <div className="bg-orb orb-2"></div>
-      <div className="bg-orb orb-3"></div>
+      <ParticleBackground />
 
       <header className="header">
         <div className="logo">⚛️ Multi-Agent Research</div>
-        <div className="header-tag">6 agents · 4 modes</div>
+        <div className="header-right">
+          <button className="history-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            🕘 History
+          </button>
+          <div className="header-tag">6 agents · 4 modes</div>
+        </div>
       </header>
+
+      <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        <div className="sidebar-header">
+          <h3>Past Reports</h3>
+          <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>✕</button>
+        </div>
+        <div className="sidebar-list">
+          {history.length === 0 && <p className="sidebar-empty">No reports yet</p>}
+          {history.map((item) => (
+            <button key={item.id} className="sidebar-item" onClick={() => loadReport(item.id)}>
+              <span className="sidebar-item-topic">{item.topic}</span>
+              <span className="sidebar-item-date">{new Date(item.created_at).toLocaleDateString()}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
       <main className="container">
         <div className="mode-grid">
@@ -170,17 +230,20 @@ function App() {
           </div>
 
           {mode === "pipeline" && (loading || result) && (
-            <div className="pipeline-track">
-              {AGENTS.map((agent, i) => (
-                <div
-                  key={agent.key}
-                  className={`pipeline-step ${i < progressStep ? "done" : ""} ${i === progressStep && loading ? "active" : ""}`}
-                >
-                  <div className="step-icon">{agent.icon}</div>
-                  <span>{agent.label}</span>
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="pipeline-track">
+                {AGENTS.map((agent, i) => (
+                  <div
+                    key={agent.key}
+                    className={`pipeline-step ${i < progressStep ? "done" : ""} ${i === progressStep && loading ? "active" : ""}`}
+                  >
+                    <div className="step-icon">{agent.icon}</div>
+                    <span>{agent.label}</span>
+                  </div>
+                ))}
+              </div>
+              {currentStatus && <p className="status-text">{currentStatus}</p>}
+            </>
           )}
 
           {error && <p className="error">{error}</p>}
@@ -206,12 +269,13 @@ function App() {
                 <button className="action-btn" onClick={copyToClipboard}>📋 Copy</button>
                 <button className="action-btn" onClick={downloadAsText}>⬇️ Download</button>
                 {mode === "pipeline" && (
-  <button className="action-btn" onClick={downloadPDF}>📄 Download PDF</button>
-)}
+                  <button className="action-btn" onClick={downloadPDF}>📄 Download PDF</button>
+                )}
               </div>
-              <ReactMarkdown>{result[activeTab] || result[tabKeys[0]]}</ReactMarkdown>
-              
-              {result.sources && result.sources.length > 0 && (
+
+              <Typewriter text={result[activeTab] || result[tabKeys[0]]} key={activeTab} />
+
+              {result.sources && result.sources.length > 0 && activeTab === "research" && (
                 <div className="sources-section">
                   <h3>🔗 Sources</h3>
                   <div className="sources-grid">

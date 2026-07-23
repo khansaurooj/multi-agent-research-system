@@ -9,8 +9,10 @@ from agents.writer import write_report
 from agents.reviewer import review_report
 from agents.searcher import search_web
 from utils.pdf_generator import generate_pdf
+from utils.database import init_db, save_report, get_all_reports, get_report_by_id, delete_report
 
 app = FastAPI()
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -93,7 +95,10 @@ def run_pipeline(request: ResearchRequest):
         report = write_report(request.topic, summary)
         review = review_report(report)
 
+        report_id = save_report(request.topic, plan, research, summary, report, review, sources)
+
         return {
+            "id": report_id,
             "topic": request.topic,
             "plan": plan,
             "research": research,
@@ -104,3 +109,20 @@ def run_pipeline(request: ResearchRequest):
         }
     except Exception as e:
         return {"error": f"Pipeline failed: {str(e)}"}
+
+
+@app.get("/history")
+def get_history():
+    return {"reports": get_all_reports()}
+
+@app.get("/history/{report_id}")
+def get_single_report(report_id: int):
+    report = get_report_by_id(report_id)
+    if report:
+        return report
+    return {"error": "Report not found"}
+
+@app.delete("/history/{report_id}")
+def remove_report(report_id: int):
+    delete_report(report_id)
+    return {"status": "deleted"}
