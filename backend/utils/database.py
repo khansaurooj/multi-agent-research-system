@@ -2,7 +2,8 @@ import sqlite3
 import json
 from datetime import datetime
 
-DB_PATH = "reports.db"
+import os
+DB_PATH = os.path.join(os.getcwd(), "reports.db")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
