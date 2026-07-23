@@ -4,8 +4,7 @@ import Typewriter from './Typewriter'
 import ParticleBackground from './ParticleBackground'
 import './App.css'
 
-const BACKEND_URL = "https://super-engine-g4rxxpxrxx47cvq54-8000.app.github.dev"
-
+const BACKEND_URL = "https://multi-agent-research-system-production-d88d.up.railway.app"
 const AGENTS = [
   { key: "plan", label: "Planner", icon: "🧭", status: "Planning the research approach..." },
   { key: "research", label: "Researcher", icon: "🔍", status: "Searching the web for current info..." },
